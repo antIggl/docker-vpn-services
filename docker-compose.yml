@@ -1,0 +1,43 @@
+version: "3.5"
+
+#volumes:
+#  vpn-data:
+  
+networks:
+  vpn-services:
+# docker network create -d bridge --subnet <> myvpn-net
+#    ipam:
+#      driver: bridge
+#      config:
+#        - subnet: "10.70.254.0/24"
+    external: true
+    name: myvpn-net
+
+services:
+  vpn:
+    restart: unless-stopped
+    container_name: ovpn
+    image: openvpn-server
+    networks:
+      vpn-services:
+        ipv4_address: 10.70.254.3
+
+    ports:
+      - 3000:1194/udp
+    volumes:
+#      - vpn-data:/etc/openvpn
+      - ./config/ovpn:/etc/openvpn
+
+  dns:
+    container_name: ovpn_dns
+    image: jpillora/dnsmasq
+    restart: unless-stopped
+    networks:
+      vpn-services:
+        ipv4_address: 10.70.254.2
+    expose:
+      - 53
+    volumes:
+#      - dns_config : /etc/dnsmasq.conf
+      - ./config/dns/dnsmasq.conf:/etc/dnsmasq.conf
+
