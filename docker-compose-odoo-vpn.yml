@@ -1,0 +1,41 @@
+version: '3.5'
+
+volumes:
+  odoo-web-data:
+  odoo-db-data:
+
+networks:
+  internal-net:
+    internal: true
+  vpn-net:
+    external: true
+    name: myvpn-net
+
+services:
+  web:
+    image: odoo:13.0
+    depends_on:
+      - db
+    expose:
+      - 8069
+    #ports:
+    #  - "8069:8069"
+    networks:
+      vpn-net:
+        ipv4_address: 10.70.254.4
+      internal-net:
+    volumes:
+      - odoo-web-data:/var/lib/odoo
+#      - ./config:/etc/odoo
+#      - ./addons:/mnt/extra-addons
+  db:
+    image: postgres:10
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_PASSWORD=odoo
+      - POSTGRES_USER=odoo
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      - odoo-db-data:/var/lib/postgresql/data/pgdata
+    networks:
+      - internal-net
