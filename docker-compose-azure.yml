@@ -1,0 +1,83 @@
+version: "3.7"
+networks:
+  vpn-services:
+    subnet: "10.70.254.0/24"    
+
+volumes:
+  ovpn-data:
+    driver: azure_file
+    driver_opts:
+      share_name: "embiomon-ovpndatashare"
+      storage_account_name: "embiomonstoreacc14511"
+  dnsmasq-data:
+    driver: azure_file
+    driver_opts:
+      share_name: "dnsmasq-datashare"
+      storage_account_name: "embiomonstoreacc14511"
+#  influxdb-config:
+#    driver: azure_file
+#    driver_opts:
+#      share_name: "embiomonconfigshare"
+#      storage_account_name: "embiomonstoreacc14511"
+services:
+  vpn:
+    restart: unless-stopped
+    container_name: ovpn
+    domainname: "airbeld-vpn"
+    image: openvpn-server
+    networks:
+      vpn-services:
+        ipv4_address: 10.70.254.3
+
+    ports:
+      - 1194:1194/udp
+    cap_add:
+      - NET_ADMIN
+
+    volumes:
+      - ovpn-data:/etc/openvpn
+#      - ./config/ovpn:/etc/openvpn
+      #- ../vpn-data:/etc/openvpn
+    depends_on:
+      - dns
+    deploy:
+      resources:
+        #reservations:
+        #  cpus: '2'
+        #  memory; 2G
+        limits:
+          cpus: '2'
+          memory: 2G
+      restart_policy:
+        condition: any
+        delay: 10s
+        max_attempts: 4
+        window: 120s
+  dns:
+    container_name: ovpn_dns
+    image: jpillora/dnsmasq
+    restart: unless-stopped
+    networks:
+      vpn-services:
+        ipv4_address: 10.70.254.2
+#    cap_add:
+#      - NET_ADMIN
+    expose:
+      - 53
+    volumes:
+      - dnsmasq-data : /etc/dnsmasq.conf
+#      - ./config/dns/dnsmasq.conf:/etc/dnsmasq.conf
+    deploy:
+      resources:
+        #reservations:
+        #  cpus: '2'
+        #  memory; 2G
+        limits:
+          cpus: '1'
+          memory: 512M
+      restart_policy:
+        condition: any
+        delay: 10s
+        max_attempts: 4
+        window: 120s
+
